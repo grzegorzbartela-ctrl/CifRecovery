@@ -128,6 +128,46 @@
       margin-bottom: 28px;
     }
 
+    .env-picker {
+      margin-bottom: 20px;
+    }
+
+    .env-picker label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 22px;
+      font-weight: 600;
+      color: #2b2b2b;
+    }
+
+    .env-picker select {
+      width: 100%;
+      min-height: 52px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #cfcfcf;
+      font-size: 20px;
+      background: #fff;
+    }
+
+    .link-preview {
+      margin-top: -4px;
+      margin-bottom: 18px;
+      font-size: 16px;
+      line-height: 1.35;
+      color: var(--muted);
+      word-break: break-all;
+    }
+
+    .link-preview a {
+      color: #005fc4;
+      text-decoration: none;
+    }
+
+    .link-preview a:hover {
+      text-decoration: underline;
+    }
+
     .btn {
       width: 100%;
       min-height: 74px;
@@ -198,9 +238,24 @@
         <p>Jeśli aplikacja jest nieaktywna, najpierw prosimy Cię o jej aktywację.</p>
       </div>
 
+      <div class="env-picker">
+        <label for="environmentSelect">Środowisko</label>
+        <select id="environmentSelect" aria-label="Wybór środowiska">
+          <option value="test">test</option>
+          <option value="test2">test2</option>
+          <option value="test3">test3</option>
+          <option value="akcept">akcept</option>
+          <option value="akcept2">akcept2</option>
+          <option value="prod">prod</option>
+        </select>
+      </div>
+
       <div class="actions">
         <button type="button" class="btn btn-primary" id="openAliorMobileButton">Otwórz Alior Mobile</button>
         <a href="#" class="btn btn-secondary">Mam aplikację na innym urządzeniu</a>
+      </div>
+      <div class="link-preview">
+        Link: <a id="cifRecoveryLink" href="#" target="_blank" rel="noopener noreferrer"></a>
       </div>
 
       <a href="#" class="back">Powrót</a>
@@ -219,23 +274,44 @@
         prod: "system.aliorbank.pl"
       };
 
-      function resolveCifRecoveryUrl() {
+      function resolveDefaultEnv() {
         const env = new URLSearchParams(window.location.search).get("env");
         const currentHost = window.location.hostname;
 
         if (env && hostByEnv[env]) {
-          return "https://" + hostByEnv[env] + CIF_RECOVERY_PATH;
+          return env;
         }
 
-        if (Object.values(hostByEnv).includes(currentHost)) {
-          return "https://" + currentHost + CIF_RECOVERY_PATH;
+        const envFromHost = Object.entries(hostByEnv).find(([, host]) => host === currentHost);
+        if (envFromHost) {
+          return envFromHost[0];
         }
 
-        return "https://" + hostByEnv.prod + CIF_RECOVERY_PATH;
+        return "prod";
       }
 
-      document.getElementById("openAliorMobileButton").addEventListener("click", function () {
-        window.location.assign(resolveCifRecoveryUrl());
+      function getCifRecoveryUrlByEnv(env) {
+        const host = hostByEnv[env] || hostByEnv.prod;
+        return "https://" + host + CIF_RECOVERY_PATH;
+      }
+
+      const environmentSelect = document.getElementById("environmentSelect");
+      const cifRecoveryLink = document.getElementById("cifRecoveryLink");
+      const openAliorMobileButton = document.getElementById("openAliorMobileButton");
+
+      function refreshCifRecoveryLink() {
+        const url = getCifRecoveryUrlByEnv(environmentSelect.value);
+        cifRecoveryLink.href = url;
+        cifRecoveryLink.textContent = url;
+      }
+
+      environmentSelect.value = resolveDefaultEnv();
+      refreshCifRecoveryLink();
+
+      environmentSelect.addEventListener("change", refreshCifRecoveryLink);
+
+      openAliorMobileButton.addEventListener("click", function () {
+        window.location.assign(getCifRecoveryUrlByEnv(environmentSelect.value));
       });
     })();
   </script>
